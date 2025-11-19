@@ -11,22 +11,24 @@ logging.basicConfig(level=logging.INFO)
 bot = telebot.TeleBot(config.BOT_TOKEN)
 sheets = SheetsClient()
 
-# Ловим и команду /start, и нажатие кнопки "Начать"
 @bot.message_handler(commands=['start'])
-@bot.message_handler(content_types=['start'])  # это для кнопки "Начать"
+@bot.message_handler(content_types=['start'])
 def start(message):
     text = (
         "Привет! Я бот взаимных подписок @MutualTG\n\n"
-        "Давай расти вместе честно и без накрутки\n\n"
-        "Просто пришли мне ссылку на свой канал (t.me/MutualTG или @MutualTG)\n"
-        "Я добавлю тебя в базу, и как только найду подходящий канал — сразу напишу тебе в личку с предложением взаимной подписки\n\n"
+        "Мы только-только запустились — сейчас в базе меньше 20 каналов, зато все живые и по-честному\n"
+        "Давай расти вместе без накрутки и ботов\n\n"
+        "Просто пришли мне ссылку на свой канал:\n"
+        "→ t.me/твойканал\n"
+        "→ или @твойканал\n\n"
+        "Я сохраню и как только найду подходящий — сразу напишу тебе в личку с предложением взаимной подписки\n\n"
         "Требования простые:\n"
-        "• Минимум ~25 живых подписчиков\n"
-        "• Никакого 18+, политики, казино, крипто-скама\n"
-        "• Подписка взаимная и не удаляется\n\n"
+        "• ~25 живых подписчиков\n"
+        "• без 18+, политики, крипты, казино\n"
+        "• подписка взаимная и не удаляется\n\n"
         "Готов? Кидай ссылку — начнём прямо сейчас"
     )
-    bot.send_message(message.chat.id, text, reply_markup=ReplyKeyboardRemove())
+    bot.send_message(message.chat.id, text, disable_web_page_preview=True)
 
 
 @bot.message_handler(func=lambda m: True)
