@@ -1,45 +1,66 @@
 # main.py
 import telebot
 from telebot.types import ReplyKeyboardRemove
-from config import Config
+from config import config
 from sheets.client import SheetsClient
 import logging
+import re
 
-# Логирование
 logging.basicConfig(level=logging.INFO)
 
-bot = telebot.TeleBot(Config.BOT_TOKEN)
+bot = telebot.TeleBot(config.BOT_TOKEN)
 sheets = SheetsClient()
 
+# Ловим и команду /start, и нажатие кнопки "Начать"
 @bot.message_handler(commands=['start'])
+@bot.message_handler(content_types=['start'])  # это для кнопки "Начать"
 def start(message):
     text = (
-        "Привет! Я бот взаимных подписок Telegram\n\n"
-        "Отправь ссылку на свой канал (t.me/xxx или @xxx)\n"
-        "Я добавлю его в базу и начну искать взаимки\n\n"
-        "Требования:\n"
-        "• От 50 живых подписчиков\n"
-        "• Без 18+, политики, крипты"
+        "Привет! Я бот взаимных подписок @MutualTG\n\n"
+        "Давай расти вместе честно и без накрутки\n\n"
+        "Просто пришли мне ссылку на свой канал (t.me/MutualTG или @MutualTG)\n"
+        "Я добавлю тебя в базу, и как только найду подходящий канал — сразу напишу тебе в личку с предложением взаимной подписки\n\n"
+        "Требования простые:\n"
+        "• Минимум ~25 живых подписчиков\n"
+        "• Никакого 18+, политики, казино, крипто-скама\n"
+        "• Подписка взаимная и не удаляется\n\n"
+        "Готов? Кидай ссылку — начнём прямо сейчас"
     )
     bot.send_message(message.chat.id, text, reply_markup=ReplyKeyboardRemove())
 
+
 @bot.message_handler(func=lambda m: True)
 def save_channel(message):
-    link = message.text.strip()
-    user = message.from_user
-    username = f"@{user.username}" if user.username else "без_юзернейма"
+    raw_link = message.text.strip()
+    user_id = message.from_user.id
+    username = f"@{message.from_user.username}" if message.from_user.username else "без_юзернейма"
 
-    if not ("t.me" in link or link.startswith("@")):
-        bot.reply_to(message, "Неправильная ссылка. Пример: t.me/mychannel")
+    # Супер-надёжная очистка и валидация ссылки
+    link = re.sub(r"^https?://", "", raw_link)
+    link = re.sub(r"^telegram\.me/", "t.me/", link)
+    link = re.sub(r"^t\.me/", "t.me/", link)
+    link = link.split("?")[0].split("#")[0].rstrip("/")
+
+    if not (link.startswith("t.me/") and len(link) > 5) and not (link.startswith("@") and len(link) > 1):
+        bot.reply_to(message, "Пожалуйста, пришли нормальную ссылку на канал:\n"
+                             "Примеры:\nt.me/MutualTG\n@MutualTG")
         return
 
-    if sheets.add_channel(user.id, username, link):
+    # Защита от дублей
+    if sheets.is_already_added(user_id):
+        bot.reply_to(message, "Ты уже в базе! Как только найду тебе взаимку — сразу напишу в личку")
+        return
+
+    # Сохраняем
+    success = sheets.add_channel(user_id, username, link)
+    if success:
         bot.reply_to(message, 
-            "Готово! Твой канал в очереди на взаимки\n"
-            "Сейчас в базе 300+ каналов — скоро начнём подписываться друг на друга"
-        )
+            "Супер! Твой канал добавлен\n\n"
+            "Как только появится подходящий канал — я лично напишу тебе в ЛС\n"
+            "Можешь позвать друзей — чем нас больше, тем быстрее взаимки")
     else:
-        bot.reply_to(message, "Ошибка записи, попробуй позже")
+        bot.reply_to(message, "Что-то пошло не так, попробуй ещё раз через минуту")
+
 
 if __name__ == "__main__":
     logging.info("Бот запущен")
