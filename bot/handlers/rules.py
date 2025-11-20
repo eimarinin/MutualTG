@@ -3,7 +3,7 @@ def register_rules_handler(bot):
     @bot.message_handler(commands=['rules'])
     def rules(message):
         text = (
-            "Правила @MutualTG — просто и по-человечески:\n\n"
+            "Правила @MutualTG:\n\n"
             "Разрешено:\n"
             "• Живые каналы от ~25 подписчиков\n"
             "• Любая тематика, кроме запрещённой\n\n"
