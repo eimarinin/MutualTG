@@ -38,8 +38,7 @@ def run_bot():
             bot.infinity_polling(
                 skip_pending=True,
                 timeout=30,
-                long_polling_timeout=30,
-                retry_after=15
+                long_polling_timeout=30
             )
             retry_count = 0
         except Exception as e:
